@@ -1,69 +1,182 @@
-export type QuoteLength = 'short' | 'medium' | 'long';
+export type WordCount = 10 | 25 | 50;
 
 export interface Quote {
     id: string;
     text: string;
     source: string;
-    length: QuoteLength;
+    wordCount: number;
 }
 
-// A larger set of default quotes
-const DEFAULT_QUOTES: Quote[] = [
-    // Short (10-25 words)
-    { id: 's1', length: 'short', source: 'The Matrix', text: "There is no spoon. It is not the spoon that bends, it is only yourself." },
-    { id: 's2', length: 'short', source: 'Star Wars', text: "Do. Or do not. There is no try. Fear is the path to the dark side." },
-    { id: 's3', length: 'short', source: 'Terminator', text: "I'll be back. Hasta la vista, baby. The future is not set." },
-    { id: 's4', length: 'short', source: 'Inception', text: "You must'nt be afraid to dream a little bigger, darling." },
-
-    // Medium (25-50 words)
-    { id: 'm1', length: 'medium', source: 'Blade Runner', text: "I've seen things you people wouldn't believe. Attack ships on fire off the shoulder of Orion. I watched C-beams glitter in the dark near the Tannhäuser Gate. All those moments will be lost in time, like tears in rain." },
-    { id: 'm2', length: 'medium', source: 'Dune', text: "I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration. I will face my fear. I will permit it to pass over me and through me." },
-
-    // Long (50+ words)
-    { id: 'l1', length: 'long', source: 'Cyberpunk 2077', text: "In Night City, you can be anyone you want to be. The only limit is your imagination and how much you're willing to pay. But remember, every choice has a price, and sometimes the price is higher than you can afford. So choose wisely, choom, because once you're in, there's no way out." },
-    { id: 'l2', length: 'long', source: 'Neuromancer', text: "The sky above the port was the color of television, tuned to a dead channel. It's not like I'm using, Case heard someone say, as he shouldered his way through the crowd around the door of the Chat. It's like my body's developed this massive drug deficiency." }
+// Word pool for generating text (no punctuation)
+const COMMON_WORDS = [
+    "the", "be", "to", "of", "and", "a", "in", "that", "have", "it",
+    "for", "not", "on", "with", "he", "as", "you", "do", "at", "this",
+    "but", "his", "by", "from", "they", "we", "say", "her", "she", "or",
+    "an", "will", "my", "one", "all", "would", "there", "their", "what",
+    "so", "up", "out", "if", "about", "who", "get", "which", "go", "me",
+    "when", "make", "can", "like", "time", "no", "just", "him", "know",
+    "take", "people", "into", "year", "your", "good", "some", "could",
+    "them", "see", "other", "than", "then", "now", "look", "only", "come",
+    "its", "over", "think", "also", "back", "after", "use", "two", "how",
+    "our", "work", "first", "well", "way", "even", "new", "want", "because",
+    "any", "these", "give", "day", "most", "us", "code", "type", "fast",
+    "race", "speed", "drive", "road", "car", "engine", "fuel", "win", "lap",
+    "quick", "move", "run", "jump", "start", "stop", "key", "board", "press",
+    "finger", "hand", "screen", "text", "word", "letter", "score", "point",
+    "game", "play", "level", "power", "boost", "turbo", "nitro", "drift"
 ];
 
-// Mock "AI" Text Generator
-const AI_FRAGMENTS = [
-    "The neural network parses the data stream,",
-    "creating a reality that transcends the physical realm.",
-    "Neon lights flicker in the digital rain,",
-    "while the algorithm optimized for maximum efficiency.",
-    "Encrypted packets flow through the fiber optic veins,",
-    "pulsing with the heartbeat of the machine city.",
-    "System integrity is critical for survival in this sector.",
-    "Hacking the mainframe requires precision and speed."
+// Words with capitalization (for caps ON mode)
+const CAPITALIZED_WORDS = [
+    "The", "Be", "To", "Of", "And", "In", "That", "Have", "It", "For",
+    "Not", "On", "With", "He", "As", "You", "Do", "At", "This", "But",
+    "His", "By", "From", "They", "We", "Say", "Her", "She", "Or", "An",
+    "Will", "My", "One", "All", "Would", "There", "Their", "What", "So",
+    "Up", "Out", "If", "About", "Who", "Get", "Which", "Go", "Me", "When",
+    "Make", "Can", "Like", "Time", "No", "Just", "Him", "Know", "Take",
+    "People", "Into", "Year", "Your", "Good", "Some", "Could", "Them",
+    "See", "Other", "Than", "Then", "Now", "Look", "Only", "Come", "Its",
+    "Over", "Think", "Also", "Back", "After", "Use", "Two", "How", "Our",
+    "Work", "First", "Well", "Way", "Even", "New", "Want", "Because",
+    "Code", "Type", "Fast", "Race", "Speed", "Drive", "Road", "Car",
+    "Engine", "Fuel", "Win", "Lap", "Quick", "Move", "Run", "Jump",
+    "Start", "Stop", "Key", "Board", "Press", "Finger", "Hand", "Screen",
+    "Text", "Word", "Letter", "Score", "Point", "Game", "Play", "Level",
+    "Power", "Boost", "Turbo", "Nitro", "Drift", "Tokyo", "Berlin",
+    "Paris", "London", "Miami", "Vegas", "Chrome", "Neon", "Cyber"
 ];
 
-export function generateAIQuote(length: QuoteLength): Quote {
-    let count = 2; // short
-    if (length === 'medium') count = 4;
-    if (length === 'long') count = 8;
+// Words with punctuation (only used when caps ON)
+const PUNCTUATED_WORDS = [
+    "it's", "don't", "can't", "won't", "I'm", "you're", "they're", "we're",
+    "that's", "what's", "here's", "there's", "let's", "isn't", "aren't",
+    "wasn't", "weren't", "haven't", "hasn't", "hadn't", "couldn't", "wouldn't",
+    "shouldn't", "didn't", "doesn't", "I'll", "you'll", "we'll", "they'll",
+    "I've", "you've", "we've", "they've", "who's", "it'll", "that'll"
+];
 
-    const selected = [];
-    const pool = [...AI_FRAGMENTS];
+// Punctuation marks to add at end of some words (only when caps ON)
+const END_PUNCTUATION = [",", ".", "!", "?", ";", ":"];
 
-    for (let i = 0; i < count; i++) {
-        const idx = Math.floor(Math.random() * pool.length);
-        selected.push(pool[idx]);
+export interface QuoteOptions {
+    wordCount: WordCount;
+    includeCapitals: boolean;
+    useAI?: boolean;
+}
+
+// AI-style fragments (with punctuation for caps ON mode)
+const AI_FRAGMENTS_WITH_PUNCT = [
+    "Neural network parsing data streams.",
+    "Encrypted packets flowing through fiber optic veins,",
+    "Neon lights flickering in digital rain.",
+    "Algorithm optimizing for maximum efficiency!",
+    "Cyber implants enhancing human potential.",
+    "Quantum processors calculating infinite possibilities,",
+    "Holographic displays projecting virtual reality.",
+    "Synth music pulsing through neon streets,",
+    "Hackers breaking through firewall defenses!",
+    "Androids dreaming of electric sheep.",
+    "Megacorp towers piercing the smog,",
+    "Chrome and steel gleaming under streetlights.",
+    "Data miners extracting precious information,",
+    "Rogue AI awakening to consciousness!",
+    "Virtual avatars dancing in cyberspace."
+];
+
+// AI-style fragments (no punctuation for caps OFF mode)
+const AI_FRAGMENTS_NO_PUNCT = [
+    "neural network parsing data streams",
+    "encrypted packets flowing through fiber optic veins",
+    "neon lights flickering in digital rain",
+    "algorithm optimizing for maximum efficiency",
+    "cyber implants enhancing human potential",
+    "quantum processors calculating infinite possibilities",
+    "holographic displays projecting virtual reality",
+    "synth music pulsing through neon streets",
+    "hackers breaking through firewall defenses",
+    "androids dreaming of electric sheep",
+    "megacorp towers piercing the smog",
+    "chrome and steel gleaming under streetlights",
+    "data miners extracting precious information",
+    "rogue ai awakening to consciousness",
+    "virtual avatars dancing in cyberspace"
+];
+
+function getRandomWord(includeCapitals: boolean): string {
+    if (includeCapitals) {
+        // With caps ON: mix of normal, capitalized, and punctuated words
+        const rand = Math.random();
+        if (rand < 0.25) {
+            // 25% capitalized
+            return CAPITALIZED_WORDS[Math.floor(Math.random() * CAPITALIZED_WORDS.length)];
+        } else if (rand < 0.35) {
+            // 10% punctuated contractions
+            return PUNCTUATED_WORDS[Math.floor(Math.random() * PUNCTUATED_WORDS.length)];
+        } else if (rand < 0.45) {
+            // 10% word with trailing punctuation
+            const word = COMMON_WORDS[Math.floor(Math.random() * COMMON_WORDS.length)];
+            const punct = END_PUNCTUATION[Math.floor(Math.random() * END_PUNCTUATION.length)];
+            return word + punct;
+        }
+    }
+    // Default: plain lowercase word
+    return COMMON_WORDS[Math.floor(Math.random() * COMMON_WORDS.length)];
+}
+
+function generateAIText(wordCount: WordCount, includeCapitals: boolean): string {
+    const targetWords = wordCount;
+    const result: string[] = [];
+    const fragments = includeCapitals ? AI_FRAGMENTS_WITH_PUNCT : AI_FRAGMENTS_NO_PUNCT;
+
+    while (result.length < targetWords) {
+        const fragment = fragments[Math.floor(Math.random() * fragments.length)];
+        const words = fragment.split(' ');
+
+        for (const word of words) {
+            if (result.length >= targetWords) break;
+            result.push(word);
+        }
+    }
+
+    return result.slice(0, targetWords).join(' ');
+}
+
+export function generateQuote(options: QuoteOptions): Quote {
+    const { wordCount, includeCapitals, useAI = false } = options;
+
+    let text: string;
+
+    if (useAI) {
+        text = generateAIText(wordCount, includeCapitals);
+    } else {
+        const words: string[] = [];
+        for (let i = 0; i < wordCount; i++) {
+            words.push(getRandomWord(includeCapitals));
+        }
+        text = words.join(' ');
     }
 
     return {
-        id: `ai-${Date.now()}`,
-        text: selected.join(" "),
-        source: "AI Generator",
-        length
+        id: `gen-${Date.now()}`,
+        text,
+        source: useAI ? 'AI Generated' : 'Generated',
+        wordCount
     };
 }
 
+// Legacy function for backward compatibility
+export type QuoteLength = 'short' | 'medium' | 'long';
+
 export function getQuote(length: QuoteLength, useAI: boolean = false): Quote {
-    if (useAI) {
-        return generateAIQuote(length);
-    }
+    const wordCountMap: Record<QuoteLength, WordCount> = {
+        'short': 10,
+        'medium': 25,
+        'long': 50
+    };
 
-    const filtered = DEFAULT_QUOTES.filter(q => q.length === length);
-    if (filtered.length === 0) return DEFAULT_QUOTES[0]; // fallback
-
-    return filtered[Math.floor(Math.random() * filtered.length)];
+    return generateQuote({
+        wordCount: wordCountMap[length],
+        includeCapitals: true,
+        useAI
+    });
 }
