@@ -1,20 +1,25 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import { useSearchParams } from 'next/navigation';
 import TypingArea from "@/components/TypingArea";
 import ProgressBar from "@/components/ProgressBar";
 import { useSocket } from "@/hooks/useSocket";
 import NeonButton from "@/components/NeonButton";
 import Link from "next/link";
-
-// Mock Text
-const RACE_TEXT = "The quick brown fox jumps over the lazy dog. Neon lights flash in the cyberpunk city as data streams flow through the grid. Speed is everything in this digital realm.";
+import { getQuote, QuoteLength } from "@/lib/quotes";
 
 export default function GameRoom({ params }: { params: Promise<{ roomId: string }> }) {
     const resolvedParams = use(params);
     const roomId = resolvedParams.roomId;
+    const searchParams = useSearchParams();
     const socket = useSocket();
 
+    // Get options from URL (in a real app this info would come from the server/room state)
+    const length = (searchParams.get('len') as QuoteLength) || 'medium';
+    const useAI = searchParams.get('ai') === 'true';
+
+    const [text, setText] = useState("");
     const [progress, setProgress] = useState(0);
     const [wpm, setWpm] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
@@ -24,6 +29,12 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
         { id: "bot-1", name: "GlitchRunner", progress: 0 },
         { id: "bot-2", name: "CyberSamurai", progress: 0 },
     ]);
+
+    useEffect(() => {
+        // 1. Fetch Quote
+        const quote = getQuote(length, useAI);
+        setText(quote.text);
+    }, [length, useAI]);
 
     useEffect(() => {
         if (!socket) return;
@@ -37,7 +48,10 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
         });
 
         // Simulate bot progress for demo
+        // Bots should be a bit slower/faster depending on difficulty?
+        // For now, random speed
         const interval = setInterval(() => {
+            if (isFinished) return;
             setOpponents(prev => prev.map(op => ({
                 ...op,
                 progress: Math.min(100, op.progress + Math.random() * 2)
@@ -46,7 +60,7 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
 
         return () => clearInterval(interval);
 
-    }, [socket, roomId]);
+    }, [socket, roomId, isFinished]);
 
     const handleProgress = (p: number, currentWpm: number) => {
         setProgress(p);
@@ -62,12 +76,20 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
         // Emit finish
     };
 
+    if (!text) return <div className="text-[var(--neon-pink)] p-10">Loading Grid...</div>;
+
     return (
         <div className="min-h-screen bg-[var(--background)] p-8 text-[var(--foreground)] font-mono">
             <header className="flex justify-between items-center mb-12 border-b border-gray-800 pb-4">
-                <h1 className="text-2xl font-bold text-[var(--neon-pink)]">
-                    RACE: <span className="text-white">{roomId}</span>
-                </h1>
+                <div>
+                    <h1 className="text-2xl font-bold text-[var(--neon-pink)]">
+                        RACE: <span className="text-white">{roomId}</span>
+                    </h1>
+                    <div className="text-xs text-gray-500 mt-1">
+                        MODE: {length.toUpperCase()} {useAI ? "+ AI" : ""}
+                    </div>
+                </div>
+
                 <div className="text-[var(--neon-blue)]">
                     STATUS: {isFinished ? "FINISHED" : "RACING"}
                 </div>
@@ -77,7 +99,7 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
                 {/* Main Area */}
                 <div className="lg:col-span-2 space-y-8">
                     <TypingArea
-                        text={RACE_TEXT}
+                        text={text}
                         onProgress={handleProgress}
                         onComplete={handleComplete}
                     />
@@ -86,9 +108,14 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
                         <div className="mt-8 p-6 border border-[var(--neon-green)] bg-[rgba(0,255,0,0.1)] rounded-xl text-center">
                             <h2 className="text-3xl font-bold text-[var(--neon-green)] mb-4">RACE COMPLETE</h2>
                             <p className="text-xl mb-6">Final WPM: {wpm}</p>
-                            <Link href="/">
-                                <NeonButton variant="green">Return to Lobby</NeonButton>
-                            </Link>
+                            <div className="flex justify-center gap-4">
+                                <Link href="/race/create">
+                                    <NeonButton variant="blue">New Race</NeonButton>
+                                </Link>
+                                <Link href="/">
+                                    <NeonButton variant="pink">Lobby</NeonButton>
+                                </Link>
+                            </div>
                         </div>
                     )}
                 </div>
