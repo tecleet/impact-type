@@ -7,9 +7,9 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-[var(--background)] relative overflow-hidden">
 
       {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-[radial-gradient(circle_at_center,_var(--neon-blue)_0%,_transparent_70%)]" />
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-[radial-gradient(circle_at_center,_var(--neon-green)_0%,_transparent_70%)]" />
 
-      <h1 className="text-6xl md:text-8xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-blue)] text-glow tracking-tighter z-10">
+      <h1 className="text-6xl md:text-8xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-green)] to-white text-glow tracking-tighter z-10">
         TECLEET
       </h1>
 
@@ -23,7 +23,7 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row gap-6 z-10 items-center">
         <Link href="/race/create">
-          <NeonButton variant="pink" className="w-48 text-lg">
+          <NeonButton variant="green" className="w-48 text-lg">
             Create Race
           </NeonButton>
         </Link>
@@ -34,7 +34,7 @@ export default function Home() {
         </Link>
 
         <Link href="/garage">
-          <button className="p-4 rounded-full border border-gray-700 bg-gray-900 text-gray-400 hover:text-[var(--neon-yellow)] hover:border-[var(--neon-yellow)] transition-all flex items-center justify-center group">
+          <button className="p-4 rounded-full border border-gray-700 bg-gray-900 text-gray-400 hover:text-[var(--neon-green)] hover:border-[var(--neon-green)] transition-all flex items-center justify-center group">
             <Wrench className="w-6 h-6 group-hover:rotate-45 transition-transform" />
             <span className="hidden group-hover:block ml-2 font-bold uppercase text-xs">Garage</span>
           </button>
@@ -42,8 +42,9 @@ export default function Home() {
       </div>
 
       <footer className="absolute bottom-8 text-gray-600 font-mono text-sm">
-        built with Next.js + Socket.io + Redis
+        built with Next.js + Socket.io
       </footer>
     </main>
   );
 }
+

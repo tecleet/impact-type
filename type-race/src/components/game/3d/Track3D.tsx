@@ -3,16 +3,20 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 interface Track3DProps {
-    speed: number;
-    progress?: number;
+    myProgress: number;      // Player's current progress (0-100)
+    isRacing: boolean;       // Whether race is active
 }
 
-export default function Track3D({ speed, progress = 0 }: Track3DProps) {
+export default function Track3D({ myProgress, isRacing }: Track3DProps) {
     const laneMarkingsRef = useRef<THREE.Group>(null);
     const guardrailsRef = useRef<THREE.Group>(null);
     const particlesRef = useRef<THREE.Group>(null);
     const sparksRef = useRef<THREE.Group>(null);
     const buildingsRef = useRef<THREE.Group>(null);
+
+    // Track progress changes to calculate movement
+    const prevProgressRef = useRef(myProgress);
+    const accumulatedMovementRef = useRef(0);
 
     // Create road texture procedurally
     const roadTexture = useMemo(() => {
@@ -42,11 +46,30 @@ export default function Track3D({ speed, progress = 0 }: Track3DProps) {
     }, []);
 
     useFrame((state, delta) => {
-        const moveSpeed = (speed * 0.25 + 12) * delta;
+        // Don't animate if not racing
+        if (!isRacing) {
+            prevProgressRef.current = myProgress;
+            return;
+        }
+
+        // Calculate progress delta (how much progress increased this frame)
+        const progressDelta = Math.max(0, myProgress - prevProgressRef.current);
+        prevProgressRef.current = myProgress;
+
+        // Convert progress to movement speed
+        // 100% progress = full track length movement
+        // Each 1% progress moves objects by ~1.5 units
+        const moveSpeed = progressDelta * 1.5;
+
+        // Accumulate for texture offset
+        accumulatedMovementRef.current += moveSpeed;
+
+        // Only animate if there's movement (player is typing)
+        if (moveSpeed <= 0) return;
 
         // Animate road texture scrolling
         if (roadTexture) {
-            roadTexture.offset.y -= moveSpeed * 0.02;
+            roadTexture.offset.y -= moveSpeed * 0.015;
         }
 
         // Move lane markings
@@ -79,10 +102,10 @@ export default function Track3D({ speed, progress = 0 }: Track3DProps) {
             });
         }
 
-        // Speed Particles
-        if (particlesRef.current) {
+        // Speed Particles - only show when moving fast
+        if (particlesRef.current && progressDelta > 0.3) {
             particlesRef.current.children.forEach((p) => {
-                p.position.z += moveSpeed * 2;
+                p.position.z += moveSpeed * 3;
                 if (p.position.z > 10) {
                     p.position.z = -80 - Math.random() * 50;
                     p.position.x = (Math.random() - 0.5) * 15;
@@ -91,10 +114,10 @@ export default function Track3D({ speed, progress = 0 }: Track3DProps) {
             });
         }
 
-        // Sparks (only at high speed)
-        if (sparksRef.current && speed > 40) {
-            sparksRef.current.children.forEach((spark, i) => {
-                spark.position.z += moveSpeed * 3;
+        // Sparks - only at very fast typing
+        if (sparksRef.current && progressDelta > 0.5) {
+            sparksRef.current.children.forEach((spark) => {
+                spark.position.z += moveSpeed * 4;
                 spark.position.y -= delta * 5;
                 if (spark.position.z > 5 || spark.position.y < 0) {
                     spark.position.z = -2 - Math.random() * 3;
@@ -163,18 +186,18 @@ export default function Track3D({ speed, progress = 0 }: Track3DProps) {
             <group ref={particlesRef}>
                 {Array.from({ length: 60 }).map((_, i) => (
                     <mesh key={i} position={[(Math.random() - 0.5) * 15, Math.random() * 3 + 0.5, -Math.random() * 100]}>
-                        <boxGeometry args={[0.02, 0.02, speed > 30 ? 1.5 : 0.6]} />
+                        <boxGeometry args={[0.02, 0.02, 0.8]} />
                         <meshBasicMaterial color="#00ff00" transparent opacity={0.8} />
                     </mesh>
                 ))}
             </group>
 
-            {/* Sparks (High Speed) */}
+            {/* Sparks (Fast Typing) */}
             <group ref={sparksRef}>
                 {Array.from({ length: 30 }).map((_, i) => (
                     <mesh key={i} position={[(Math.random() - 0.5) * 3, 0.1, -Math.random() * 5]}>
                         <boxGeometry args={[0.03, 0.03, 0.1]} />
-                        <meshBasicMaterial color="#ff8800" transparent opacity={speed > 40 ? 1 : 0} />
+                        <meshBasicMaterial color="#ff8800" transparent opacity={0.8} />
                     </mesh>
                 ))}
             </group>

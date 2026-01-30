@@ -6,11 +6,11 @@ export interface Car3DProps {
     color: string;
     type?: 'starter' | 'speedster' | 'muscle' | 'cyber' | 'hyper' | 'legend';
     lane: number;
-    progress: number;
+    isMoving?: boolean;
     isMyCar?: boolean;
 }
 
-export default function Car3D({ color, lane, type = 'starter', isMyCar }: Car3DProps) {
+export default function Car3D({ color, lane, type = 'starter', isMyCar, isMoving = false }: Car3DProps) {
     const group = useRef<THREE.Group>(null);
 
     const xPos = lane * 2.5;
@@ -206,20 +206,20 @@ export default function Car3D({ color, lane, type = 'starter', isMyCar }: Car3DP
             />
 
             {/* Wheels - Individual with proper rotation */}
-            <Wheel position={[0.65, 0.22, 0.9]} side="right" />
-            <Wheel position={[-0.65, 0.22, 0.9]} side="left" />
-            <Wheel position={[0.65, 0.22, -0.9]} side="right" />
-            <Wheel position={[-0.65, 0.22, -0.9]} side="left" />
+            <Wheel position={[0.65, 0.22, 0.9]} side="right" isMoving={isMoving} />
+            <Wheel position={[-0.65, 0.22, 0.9]} side="left" isMoving={isMoving} />
+            <Wheel position={[0.65, 0.22, -0.9]} side="right" isMoving={isMoving} />
+            <Wheel position={[-0.65, 0.22, -0.9]} side="left" isMoving={isMoving} />
         </group>
     );
 }
 
-function Wheel({ position, side }: { position: [number, number, number]; side: 'left' | 'right' }) {
+function Wheel({ position, side, isMoving }: { position: [number, number, number]; side: 'left' | 'right'; isMoving: boolean }) {
     const wheelRef = useRef<THREE.Group>(null);
 
     useFrame((state, delta) => {
-        if (wheelRef.current) {
-            // Rotate on X axis for forward roll
+        if (wheelRef.current && isMoving) {
+            // Rotate on X axis for forward roll - only when moving
             wheelRef.current.rotation.x -= delta * 25;
         }
     });

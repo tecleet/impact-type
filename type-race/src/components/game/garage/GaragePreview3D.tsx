@@ -27,7 +27,7 @@ function SpinningCar({ car }: { car: CarModel }) {
                 color={car.color}
                 type={car.type}
                 lane={0}
-                progress={0}
+                isMoving={false}
                 isMyCar={true} // Triggers underglow
             />
         </group>

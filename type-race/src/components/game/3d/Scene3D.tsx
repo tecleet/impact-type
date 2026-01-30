@@ -11,6 +11,7 @@ interface Scene3DProps {
     myCarId: string;
     wpm: number;
     progress: number;
+    isRacing: boolean;
     opponents: {
         id: string;
         carId: string;
@@ -19,7 +20,7 @@ interface Scene3DProps {
     }[];
 }
 
-export default function Scene3D({ myCarId, wpm, progress, opponents }: Scene3DProps) {
+export default function Scene3D({ myCarId, wpm, progress, isRacing, opponents }: Scene3DProps) {
     const myCar = getCarById(myCarId);
 
     // Show finish line when close to end
@@ -37,27 +38,31 @@ export default function Scene3D({ myCarId, wpm, progress, opponents }: Scene3DPr
                 <pointLight position={[10, 5, -10]} intensity={0.3} color="#00ff00" />
 
                 <Suspense fallback={null}>
-                    {/* The Track */}
-                    <Track3D speed={wpm} progress={progress} />
+                    {/* The Track - now uses progress-based movement */}
+                    <Track3D myProgress={progress} isRacing={isRacing} />
 
-                    {/* My Car (Always Center) */}
+                    {/* My Car (Always Center at Z=0) */}
                     <Car3D
                         color={myCar.color}
                         type={myCar.type}
                         lane={0}
-                        progress={progress}
+                        isMoving={isRacing && wpm > 0}
                         isMyCar={true}
                     />
 
-                    {/* Opponents (Calculated positions based on relative progress) */}
+                    {/* Opponents - positioned based on progress difference */}
                     {opponents.map((opp, idx) => {
                         const oppCar = getCarById(opp.carId);
-                        // Convert progress difference to Z position
-                        const relProgress = opp.progress - progress;
-                        const zPos = -relProgress * 2;
 
-                        // Don't render if too far
-                        if (Math.abs(zPos) > 80) return null;
+                        // Calculate relative position
+                        // If opponent has higher progress, they are AHEAD (negative Z = further down the track)
+                        // If opponent has lower progress, they are BEHIND (positive Z = behind camera)
+                        const progressDiff = opp.progress - progress;
+                        // Scale: 1% progress difference = 1.5 units of Z distance
+                        const zPos = -progressDiff * 1.5;
+
+                        // Don't render if too far behind (off camera) or way ahead
+                        if (zPos > 20 || zPos < -80) return null;
 
                         return (
                             <group key={opp.id} position={[0, 0, zPos]}>
@@ -65,14 +70,14 @@ export default function Scene3D({ myCarId, wpm, progress, opponents }: Scene3DPr
                                     color={oppCar.color}
                                     type={oppCar.type}
                                     lane={idx % 2 === 0 ? 1 : -1}
-                                    progress={opp.progress}
+                                    isMoving={opp.wpm > 0}
                                 />
                             </group>
                         );
                     })}
 
                     {/* Finish Line */}
-                    {showFinishLine && <FinishLine zPosition={-(100 - progress) * 2 - 5} />}
+                    {showFinishLine && <FinishLine zPosition={-(100 - progress) * 1.5 - 5} />}
 
                     {/* Environment */}
                     <Stars radius={150} depth={80} count={3000} factor={3} saturation={0} fade speed={0.5} />
