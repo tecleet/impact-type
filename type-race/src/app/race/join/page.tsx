@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSocket } from '@/hooks/useSocket';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
@@ -17,7 +17,7 @@ interface RoomInfo {
     };
 }
 
-export default function JoinRacePage() {
+function JoinRaceContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const socket = useSocket();
@@ -189,5 +189,17 @@ export default function JoinRacePage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function JoinRacePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+                <div className="text-[var(--neon-green)] font-mono animate-pulse">LOADING...</div>
+            </div>
+        }>
+            <JoinRaceContent />
+        </Suspense>
     );
 }
