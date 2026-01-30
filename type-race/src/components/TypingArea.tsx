@@ -25,6 +25,7 @@ export default function TypingArea({
     const [wpm, setWpm] = useState(0);
     const [isCompleted, setIsCompleted] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const lastUpdateRef = useRef<number>(0);
 
     const { startEngine, stopEngine, onCorrectKeystroke, onErrorKeystroke, onBackspace } = useSoundEngine(engineType);
 
@@ -53,16 +54,6 @@ export default function TypingArea({
         return correct;
     }, [text]);
 
-    // Check if there's an error in the input
-    const hasError = useCallback((inputStr: string) => {
-        for (let i = 0; i < inputStr.length; i++) {
-            if (inputStr[i] !== text[i]) {
-                return true;
-            }
-        }
-        return false;
-    }, [text]);
-
     const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         if (isCompleted) return;
 
@@ -79,20 +70,12 @@ export default function TypingArea({
         // Handle sound based on input type (only if sound enabled)
         if (soundEnabled) {
             if (isBackspaceKey) {
-                // Backspace = drop the engine
                 onBackspace();
             } else if (val.length > prevLen) {
-                // Check if the new character is correct
                 const newCharIndex = val.length - 1;
                 const isCorrect = val[newCharIndex] === text[newCharIndex];
-
-                if (isCorrect) {
-                    // Correct keystroke = rev the engine!
-                    onCorrectKeystroke();
-                } else {
-                    // Error = engine misfire!
-                    onErrorKeystroke();
-                }
+                if (isCorrect) onCorrectKeystroke();
+                else onErrorKeystroke();
             }
         }
 
@@ -107,14 +90,21 @@ export default function TypingArea({
         const currentWpm = timeElapsedMin > 0 ? Math.round((correctCount / 5) / timeElapsedMin) : 0;
 
         setWpm(currentWpm);
-        onProgress(progress, currentWpm);
+
+        // Throttling updates to parent (scene re-render)
+        // Update immediately if finished or if enough time passed (100ms)
+        const now = Date.now();
+        if (val === text || now - lastUpdateRef.current > 100) {
+            onProgress(progress, currentWpm);
+            lastUpdateRef.current = now;
+        }
 
         // Only complete if entire text matches exactly
         if (val === text) {
             setIsCompleted(true);
             onComplete(currentWpm);
         }
-    }, [text, startTime, isCompleted, input, onProgress, onComplete, startEngine, onCorrectKeystroke, onErrorKeystroke, onBackspace, getCorrectCount]);
+    }, [text, startTime, isCompleted, input, onProgress, onComplete, startEngine, onCorrectKeystroke, onErrorKeystroke, onBackspace, getCorrectCount, soundEnabled]);
 
     // Prevent pasting
     const handlePaste = (e: React.ClipboardEvent) => {
@@ -136,7 +126,7 @@ export default function TypingArea({
                 WPM: <span className="text-xl font-bold">{wpm}</span>
             </div>
 
-            <div className="mb-4 text-xl font-mono text-gray-400 break-words leading-relaxed relative pr-16">
+            <div className="mb-4 text-xl font-mono text-gray-400 break-words leading-relaxed relative pr-16 select-none">
                 {/* Render Characters */}
                 {text.split("").map((char, index) => {
                     let color = "text-gray-500";
@@ -146,8 +136,9 @@ export default function TypingArea({
                         if (input[index] === char) {
                             color = "text-[var(--neon-green)]";
                         } else {
-                            color = "text-[var(--neon-pink)]";
-                            decoration = "line-through";
+                            // WRONG CHARACTER: RED and Strikethrough
+                            color = "text-red-500 font-bold";
+                            decoration = "line-through decoration-red-500";
                         }
                     }
 
@@ -166,8 +157,7 @@ export default function TypingArea({
                                 <motion.span
                                     layoutId="cursor"
                                     className="absolute left-0 -top-1 w-[3px] h-7 bg-[var(--neon-yellow)] rounded"
-                                    animate={{ opacity: [1, 0.3, 1] }}
-                                    transition={{ repeat: Infinity, duration: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 28 }}
                                     style={{ boxShadow: '0 0 10px var(--neon-yellow)' }}
                                 />
                             )}
