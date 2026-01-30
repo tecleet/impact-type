@@ -145,10 +145,10 @@ export function startEngineSound(profile: SoundProfile): void {
             noiseFilter = ctx.createBiquadFilter();
             noiseFilter.type = 'lowpass';
             noiseFilter.Q.value = 1;
-            noiseFilter.frequency.setValueAtTime(100, ctx.currentTime); // Low rumble
+            noiseFilter.frequency.setValueAtTime(80, ctx.currentTime); // Lower rumble (was 100)
 
             noiseGain = ctx.createGain();
-            noiseGain.gain.setValueAtTime(0.4, ctx.currentTime);
+            noiseGain.gain.setValueAtTime(0.15, ctx.currentTime); // Less noise (was 0.4)
 
             noiseNode.connect(noiseFilter);
             noiseFilter.connect(noiseGain);
@@ -161,20 +161,20 @@ export function startEngineSound(profile: SoundProfile): void {
 
             // Texture depends on engine type
             if (profile.engineType === 'v8') {
-                lowOsc.type = 'sawtooth'; // Rougher for V8
+                lowOsc.type = 'triangle'; // Smoother for V8 (was sawtooth)
             } else if (profile.engineType === 'v12') {
-                lowOsc.type = 'triangle'; // Smoother for V12
+                lowOsc.type = 'sine'; // Even smoother for V12
             } else {
-                lowOsc.type = 'square'; // Punchy for others
+                lowOsc.type = 'triangle';
             }
 
             lowOsc.frequency.setValueAtTime(profile.baseFreq, ctx.currentTime);
-            lowGain.gain.setValueAtTime(0.3, ctx.currentTime);
+            lowGain.gain.setValueAtTime(0.4, ctx.currentTime); // Slightly higher tonal gain to compensate for less noise
 
             // Filter the main note to remove harsh buzz
             const lowFilter = ctx.createBiquadFilter();
             lowFilter.type = 'lowpass';
-            lowFilter.frequency.value = 400;
+            lowFilter.frequency.value = 300; // Lower cutoff (was 400)
 
             lowOsc.connect(lowFilter);
             lowFilter.connect(lowGain);
@@ -188,16 +188,16 @@ export function startEngineSound(profile: SoundProfile): void {
             if (profile.engineType === 'turbo') {
                 midOsc.type = 'sine'; // Turbo whistle
             } else {
-                midOsc.type = 'sawtooth'; // Growl
+                midOsc.type = 'triangle'; // Smoother harmonic (was sawtooth)
             }
 
             midOsc.frequency.setValueAtTime(profile.baseFreq * 1.5, ctx.currentTime);
-            midGain.gain.setValueAtTime(0.15, ctx.currentTime);
+            midGain.gain.setValueAtTime(0.1, ctx.currentTime); // Lower harmonic influence (was 0.15)
 
             // Filter mid too
             const midFilter = ctx.createBiquadFilter();
             midFilter.type = 'lowpass';
-            midFilter.frequency.value = 600;
+            midFilter.frequency.value = 500; // (was 600)
 
             midOsc.connect(midFilter);
             midFilter.connect(midGain);

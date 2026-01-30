@@ -165,96 +165,116 @@ export default function GameRoom({ params }: { params: Promise<{ roomId: string 
     };
 
     return (
-        <div className="min-h-screen bg-[var(--background)] p-8 text-[var(--foreground)] font-mono">
-            {/* Countdown Overlay */}
-            {showCountdown && <Countdown seconds={3} onComplete={handleCountdownComplete} />}
-
+        <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)] font-mono overflow-hidden">
             {/* Header */}
-            <header className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+            <header className="flex-none flex justify-between items-center px-6 py-3 border-b border-[var(--glass-border)] bg-black/40 backdrop-blur-sm z-20">
                 {/* Logo - links to home */}
-                <Link href="/" className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-blue)] hover:opacity-80 transition-opacity">
+                <Link href="/" className="text-xl font-black text-[var(--neon-green)] hover:text-white transition-colors tracking-widest">
                     TECLEET
                 </Link>
 
-                <div>
-                    <h1 className="text-xl font-bold text-[var(--neon-pink)]">
-                        RACE: <span className="text-white">{roomId}</span>
-                    </h1>
-                    <div className="text-xs text-gray-500 mt-1">
-                        {wordCount} WORDS {includeCapitals ? "• CAPS" : "• NO CAPS"} {useAI && "• AI"}
+                <div className="flex items-center gap-6">
+                    <div>
+                        <h1 className="text-sm font-bold text-gray-400">
+                            RACE ID: <span className="text-white font-mono">{roomId}</span>
+                        </h1>
                     </div>
-                </div>
 
-                {/* Timer Display */}
-                <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">TIME</div>
-                    <div className="text-4xl font-black text-[var(--neon-yellow)] font-mono tabular-nums">
-                        {raceStarted ? elapsed.toFixed(1) : "0.0"}s
+                    {/* Timer Display */}
+                    <div className="text-center w-24">
+                        <div className="text-[10px] text-gray-500 tracking-wider">TIME</div>
+                        <div className="text-2xl font-black text-[var(--neon-green)] font-mono tabular-nums leading-none">
+                            {raceStarted ? elapsed.toFixed(1) : "0.0"}s
+                        </div>
                     </div>
-                </div>
 
-                <div className="text-right">
-                    <div className="text-xs text-gray-500 mb-1">STATUS</div>
-                    <div className={`text-xl font-bold ${isFinished ? 'text-[var(--neon-green)]' : 'text-[var(--neon-blue)]'}`}>
-                        {!raceStarted ? "READY" : isFinished ? "FINISHED" : "RACING"}
+                    <div className="text-right w-24">
+                        <div className="text-[10px] text-gray-500 tracking-wider">STATUS</div>
+                        <div className={`text-xl font-bold ${isFinished ? 'text-white' : 'text-[var(--neon-green)]'}`}>
+                            {!raceStarted ? "READY" : isFinished ? "DONE" : "RACING"}
+                        </div>
                     </div>
-                </div>
 
-                {/* Sound Toggle */}
-                <button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${soundEnabled ? 'border-[var(--neon-green)] text-[var(--neon-green)] bg-[rgba(0,255,0,0.1)]' : 'border-gray-600 text-gray-500 bg-gray-900'}`}
-                >
-                    {soundEnabled ? '🔊 ON' : '🔇 OFF'}
-                </button>
+                    {/* Sound Toggle */}
+                    <button
+                        onClick={() => setSoundEnabled(!soundEnabled)}
+                        className={`p-2 rounded border transition-all duration-200 text-xs ${soundEnabled ? 'border-[var(--neon-green)] text-[var(--neon-green)] bg-[rgba(0,255,0,0.1)]' : 'border-gray-800 text-gray-600 bg-gray-900'}`}
+                    >
+                        {soundEnabled ? '🔊' : '🔇'}
+                    </button>
+                </div>
             </header>
 
-            {/* Main 3D Scene Area */}
-            <div className="lg:col-span-3 relative">
-                <Scene3D
-                    myCarId={playerCar.id}
-                    wpm={raceStarted ? wpm : 0}
-                    progress={progress}
-                    opponents={opponents}
-                />
+            {/* Countdown Overlay - Absolute Center */}
+            {showCountdown && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <Countdown seconds={3} onComplete={handleCountdownComplete} />
+                </div>
+            )}
 
-                {/* HUD: Typing Area Overlay */}
-                <div className="absolute inset-x-0 bottom-8 max-w-4xl mx-auto px-4">
-                    <TypingArea
-                        text={text}
-                        onProgress={handleProgress}
-                        onComplete={handleComplete}
-                        engineType={playerCar.engineType}
-                        soundEnabled={soundEnabled}
+            {/* Main Game Flex Container */}
+            <div className="flex-1 flex flex-col min-h-0 relative">
+
+                {/* 3D Scene Area - Takes available space */}
+                <div className="flex-1 relative min-h-0 bg-gray-900/20">
+                    <Scene3D
+                        myCarId={playerCar.id}
+                        wpm={raceStarted ? wpm : 0}
+                        progress={progress}
+                        opponents={opponents}
                     />
                 </div>
-            </div>
 
-            {/* Sidebar Stats (Hidden for now, can be moved below) */}
-            {isFinished && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="lg:col-span-3 mt-8 p-6 border border-[var(--neon-green)] bg-[rgba(0,255,0,0.1)] rounded-xl text-center"
-                >
-                    <h2 className="text-4xl font-black text-[var(--neon-green)] mb-2 text-glow">RACE COMPLETE</h2>
-                    <p className="text-2xl mb-2">
-                        Your Rank: <span className="text-[var(--neon-yellow)] font-black">#{rankings.findIndex(r => r.id === 'player') + 1}</span>
-                    </p>
-                    <p className="text-xl mb-8">
-                        Final: <span className="text-white font-bold">{wpm} WPM</span> in <span className="text-white">{finishTime?.toFixed(2)}s</span>
-                    </p>
-
-                    <div className="flex justify-center gap-4">
-                        <Link href="/race/create">
-                            <NeonButton variant="blue">Race Again</NeonButton>
-                        </Link>
-                        <Link href="/garage">
-                            <NeonButton variant="green">Go to Garage</NeonButton>
-                        </Link>
+                {/* HUD: Typing Area - Fixed bottom section */}
+                <div className="flex-none bg-black/80 border-t border-[var(--glass-border)] p-6 pb-8 backdrop-blur-md z-10">
+                    <div className="max-w-4xl mx-auto">
+                        <TypingArea
+                            text={text}
+                            onProgress={handleProgress}
+                            onComplete={handleComplete}
+                            engineType={playerCar.engineType}
+                            soundEnabled={soundEnabled}
+                        />
                     </div>
-                </motion.div>
-            )}
+                </div>
+
+                {/* Results Overlay (Centered) */}
+                {isFinished && (
+                    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="w-full max-w-lg p-8 border border-[var(--neon-green)] bg-black box-glow rounded-xl text-center"
+                        >
+                            <h2 className="text-5xl font-black text-[var(--neon-green)] mb-2 text-glow tracking-tighter">FINISH</h2>
+                            <div className="my-8 space-y-2">
+                                <p className="text-2xl text-gray-400">
+                                    RANK <span className="text-white font-black text-3xl">#{rankings.findIndex(r => r.id === 'player') + 1}</span>
+                                </p>
+                                <div className="grid grid-cols-2 gap-4 mt-6">
+                                    <div className="p-4 bg-[var(--neon-dim)] rounded border border-[var(--neon-green)]">
+                                        <div className="text-xs text-[var(--neon-green)]">SPEED</div>
+                                        <div className="text-3xl font-bold text-white">{wpm} WPM</div>
+                                    </div>
+                                    <div className="p-4 bg-[var(--neon-dim)] rounded border border-[var(--neon-green)]">
+                                        <div className="text-xs text-[var(--neon-green)]">TIME</div>
+                                        <div className="text-3xl font-bold text-white">{finishTime?.toFixed(2)}s</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center gap-4 mt-8">
+                                <Link href="/race/create" className="flex-1">
+                                    <NeonButton variant="blue" className="w-full">RACE AGAIN</NeonButton>
+                                </Link>
+                                <Link href="/garage" className="flex-1">
+                                    <NeonButton variant="green" className="w-full">GARAGE</NeonButton>
+                                </Link>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

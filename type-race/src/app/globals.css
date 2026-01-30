@@ -1,16 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050505;
-  --foreground: #e0e0e0;
-  
-  /* Neon Palette */
-  --neon-pink: #ff2a6d;
-  --neon-blue: #05d9e8;
-  --neon-green: #00ff9f;
-  --neon-yellow: #f7ff00;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --background: #000000;
+  --foreground: #ffffff;
+
+  /* Matrix/Hacker Palette */
+  --neon-primary: #00ff00;
+  --neon-secondary: #ccffcc;
+  --neon-dim: #003300;
+
+  /* Mapped for backward compatibility but overridden */
+  --neon-pink: #ffffff;
+  /* Accent 2 -> White */
+  --neon-blue: #00ff00;
+  /* Accent 1 -> Green */
+  --neon-green: #00ff00;
+  /* Main -> Green */
+  --neon-yellow: #ffffff;
+  /* Warning/Highlight -> White */
+
+  --glass-bg: rgba(0, 255, 0, 0.05);
+  --glass-border: rgba(0, 255, 0, 0.2);
 }
 
 @theme inline {
@@ -36,9 +46,9 @@ body {
 
 /* Custom Utilities for Neon Glow */
 .text-glow {
-  text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+  text-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green);
 }
 
 .box-glow {
-  box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+  box-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-dim);
 }
