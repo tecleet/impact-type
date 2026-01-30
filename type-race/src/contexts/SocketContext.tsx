@@ -21,7 +21,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         // Initialize socket only once
-        const socketInstance = io();
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+        const socketInstance = socketUrl ? io(socketUrl) : io();
 
         socketInstance.on('connect', () => {
             console.log('Socket connected:', socketInstance.id);
