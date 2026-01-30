@@ -12,7 +12,6 @@ export interface Car3DProps {
 
 export default function Car3D({ color, lane, type = 'starter', isMyCar }: Car3DProps) {
     const group = useRef<THREE.Group>(null);
-    const wheels = useRef<THREE.Group>(null);
 
     const xPos = lane * 2.5;
 
@@ -21,11 +20,6 @@ export default function Car3D({ color, lane, type = 'starter', isMyCar }: Car3DP
 
         // Bobbing effect
         group.current.position.y = Math.sin(state.clock.getElapsedTime() * 15) * 0.015 + 0.35;
-
-        // Spin wheels
-        if (wheels.current) {
-            wheels.current.rotation.x -= delta * 20;
-        }
     });
 
     const bodyMaterial = new THREE.MeshStandardMaterial({
@@ -211,27 +205,62 @@ export default function Car3D({ color, lane, type = 'starter', isMyCar }: Car3DP
                 target-position={[0, 0, -20]}
             />
 
-            {/* Wheels Group - Adjust position based on car length */}
-            <group ref={wheels}>
-                <Wheel position={[0.6, 0.25, 0.9]} />
-                <Wheel position={[-0.6, 0.25, 0.9]} />
-                <Wheel position={[0.6, 0.25, -0.9]} />
-                <Wheel position={[-0.6, 0.25, -0.9]} />
-            </group>
+            {/* Wheels - Individual with proper rotation */}
+            <Wheel position={[0.65, 0.22, 0.9]} side="right" />
+            <Wheel position={[-0.65, 0.22, 0.9]} side="left" />
+            <Wheel position={[0.65, 0.22, -0.9]} side="right" />
+            <Wheel position={[-0.65, 0.22, -0.9]} side="left" />
         </group>
     );
 }
 
-function Wheel({ position }: { position: [number, number, number] }) {
+function Wheel({ position, side }: { position: [number, number, number]; side: 'left' | 'right' }) {
+    const wheelRef = useRef<THREE.Group>(null);
+
+    useFrame((state, delta) => {
+        if (wheelRef.current) {
+            // Rotate on X axis for forward roll
+            wheelRef.current.rotation.x -= delta * 25;
+        }
+    });
+
     return (
-        <mesh position={position} rotation={[0, 0, Math.PI / 2]} castShadow>
-            <cylinderGeometry args={[0.3, 0.3, 0.3, 24]} />
-            <meshStandardMaterial color="#111" roughness={0.8} />
-            {/* Rim */}
-            <mesh position={[0, 0.16, 0]}>
-                <cylinderGeometry args={[0.15, 0.15, 0.05, 12]} />
-                <meshStandardMaterial color="#888" metalness={0.9} roughness={0.2} />
+        <group ref={wheelRef} position={position}>
+            {/* Tire */}
+            <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
+                <cylinderGeometry args={[0.28, 0.28, 0.22, 24]} />
+                <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
             </mesh>
-        </mesh>
+
+            {/* Tire Tread (Ring around tire) */}
+            <mesh rotation={[0, 0, Math.PI / 2]}>
+                <torusGeometry args={[0.28, 0.03, 8, 24]} />
+                <meshStandardMaterial color="#111111" roughness={1} />
+            </mesh>
+
+            {/* Rim - Outer facing */}
+            <mesh position={[side === 'right' ? 0.12 : -0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.18, 0.18, 0.02, 16]} />
+                <meshStandardMaterial color="#888888" metalness={0.95} roughness={0.1} />
+            </mesh>
+
+            {/* Rim Center Cap */}
+            <mesh position={[side === 'right' ? 0.13 : -0.13, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.08, 0.08, 0.02, 8]} />
+                <meshStandardMaterial color="#444444" metalness={0.9} roughness={0.2} />
+            </mesh>
+
+            {/* Rim Spokes */}
+            {[0, 1, 2, 3, 4].map((i) => (
+                <mesh
+                    key={i}
+                    position={[side === 'right' ? 0.11 : -0.11, 0, 0]}
+                    rotation={[i * (Math.PI / 2.5), 0, Math.PI / 2]}
+                >
+                    <boxGeometry args={[0.02, 0.25, 0.015]} />
+                    <meshStandardMaterial color="#666666" metalness={0.9} roughness={0.2} />
+                </mesh>
+            ))}
+        </group>
     );
 }
